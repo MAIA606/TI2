@@ -1,0 +1,20 @@
+import java.util.*;
+
+class Soma {
+	// scanner
+	public static Scanner sc = new Scanner(System.in);
+
+	public static void main() {
+		// variaveis
+		int n1, n2, soma;
+		System.out.println("Insira o primeiro numero:");
+		n1 = sc.nextInt();
+		System.out.println("Insira o segundo numero:");
+		n2 = sc.nextInt();
+
+		soma = n1 + n2;
+		// print de resultado
+		System.out.println("Resultado:" + soma);
+	}
+
+}
