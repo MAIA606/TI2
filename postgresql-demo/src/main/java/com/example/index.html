@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Gerenciador de Filmes</title>
+    <!-- Estilos básicos -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        #movie-list {
+            margin-top: 20px;
+        }
+        .movie {
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        .movie h3 {
+            margin: 0;
+        }
+        .movie p {
+            margin: 5px 0;
+        }
+        .movie button {
+            margin-right: 5px;
+        }
+        #add-movie-form, #update-movie-form {
+            max-width: 400px;
+            margin: 20px auto;
+        }
+        #add-movie-form input, #update-movie-form input, #add-movie-form button, #update-movie-form button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+        }
+        #update-movie-form {
+            display: none;
+        }
+        .close-btn {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            cursor: pointer;
+            color: red;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Gerenciador de Filmes</h1>
+
+    <div id="movie-list">
+        <!-- Lista de filmes será carregada aqui -->
+    </div>
+
+    <h2>Adicionar Novo Filme</h2>
+    <form id="add-movie-form">
+        <input type="text" id="title" placeholder="Título" required>
+        <input type="text" id="genre" placeholder="Gênero" required>
+        <input type="text" id="director" placeholder="Diretor" required>
+        <input type="number" id="releaseYear" placeholder="Ano de Lançamento" required>
+        <button type="submit">Adicionar Filme</button>
+    </form>
+
+    <h2>Atualizar Filme</h2>
+    <form id="update-movie-form">
+        <input type="hidden" id="update-id">
+        <input type="text" id="update-title" placeholder="Título" required>
+        <input type="text" id="update-genre" placeholder="Gênero" required>
+        <input type="text" id="update-director" placeholder="Diretor" required>
+        <input type="number" id="update-releaseYear" placeholder="Ano de Lançamento" required>
+        <button type="submit">Atualizar Filme</button>
+        <button type="button" onclick="hideUpdateForm()">Cancelar</button>
+    </form>
+
+    <!-- Scripts -->
+    <script src="script.js"></script>
+</body>
+</html>

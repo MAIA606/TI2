@@ -1,138 +1,120 @@
 package com.example;
 
+import static spark.Spark.*;
+import com.google.gson.Gson;
 import java.util.List;
-import java.util.Scanner;
 
 public class Iniciar {
-  private static MovieDAO movieDAO = new MovieDAO();
-  private static Scanner scanner = new Scanner(System.in);
+    private static MovieDAO movieDAO = new MovieDAO();
+    private static Gson gson = new Gson();
 
-  public static void main(String[] args) {
-    if (movieDAO.conectar()) {
-      System.out.println("Conectado ao banco de dados.");
-      int option;
-      do {
-        option = showMenu();
-        switch (option) {
-          case 1:
-            addMovie();
-            break;
-          case 2:
-            listMovies();
-            break;
-          case 3:
-            updateMovie();
-            break;
-          case 4:
-            deleteMovie();
-            break;
-          case 5:
-            System.out.println("Saindo...");
-            break;
-          default:
-            System.out.println("Opção inválida. Tente novamente.");
+    public static void main(String[] args) {
+        // Configuração de CORS
+        options("/*", (request, response) -> {
+            String accessControlRequestHeaders = request.headers("Access-Control-Request-Headers");
+            if (accessControlRequestHeaders != null) {
+                response.header("Access-Control-Allow-Headers", accessControlRequestHeaders);
+            }
+
+            String accessControlRequestMethod = request.headers("Access-Control-Request-Method");
+            if (accessControlRequestMethod != null) {
+                response.header("Access-Control-Allow-Methods", accessControlRequestMethod);
+            }
+
+            return "OK";
+        });
+
+        before((request, response) -> {
+            response.header("Access-Control-Allow-Origin", "*");
+            response.header("Access-Control-Allow-Headers", "*");
+            response.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+        });
+
+        if (movieDAO.conectar()) {
+            System.out.println("Conectado ao banco de dados.");
+
+            // Rota para adicionar um filme (POST)
+            post("/movies", (req, res) -> {
+                Movie movie = gson.fromJson(req.body(), Movie.class);
+                if (movieDAO.insertMovie(movie)) {
+                    res.status(201); // Created
+                    return "Filme adicionado com sucesso!";
+                } else {
+                    res.status(500); // Internal Server Error
+                    return "Erro ao adicionar o filme.";
+                }
+            });
+
+            // Rota para listar filmes (GET)
+            get("/movies", (req, res) -> {
+                List<Movie> movies = movieDAO.getMovies();
+                res.type("application/json");
+                return gson.toJson(movies);
+            });
+
+            // Rota para atualizar um filme (PUT)
+            put("/movies/:id", (req, res) -> {
+                int id = Integer.parseInt(req.params(":id"));
+                Movie movie = movieDAO.getMovie(id);
+                if (movie == null) {
+                    res.status(404); // Not Found
+                    return "Filme não encontrado!";
+                }
+
+                Movie updatedMovie = gson.fromJson(req.body(), Movie.class);
+
+                if (updatedMovie.getTitle() != null && !updatedMovie.getTitle().isEmpty()) {
+                    movie.setTitle(updatedMovie.getTitle());
+                }
+                if (updatedMovie.getReleaseYear() != 0) {
+                    movie.setReleaseYear(updatedMovie.getReleaseYear());
+                }
+                if (updatedMovie.getGenre() != null && !updatedMovie.getGenre().isEmpty()) {
+                    movie.setGenre(updatedMovie.getGenre());
+                }
+                if (updatedMovie.getDirector() != null && !updatedMovie.getDirector().isEmpty()) {
+                    movie.setDirector(updatedMovie.getDirector());
+                }
+
+                if (movieDAO.updateMovie(movie)) {
+                    return "Filme atualizado com sucesso!";
+                } else {
+                    res.status(500); // Internal Server Error
+                    return "Erro ao atualizar o filme.";
+                }
+            });
+
+            // Rota para deletar um filme (DELETE)
+            delete("/movies/:id", (req, res) -> {
+                int id = Integer.parseInt(req.params(":id"));
+                if (movieDAO.deleteMovie(id)) {
+                    return "Filme deletado com sucesso!";
+                } else {
+                    res.status(500); // Internal Server Error
+                    return "Erro ao deletar o filme.";
+                }
+            });
+
+            // Rota para buscar um filme por ID (GET)
+            get("/movies/:id", (req, res) -> {
+                int id = Integer.parseInt(req.params(":id"));
+                Movie movie = movieDAO.getMovie(id);
+                if (movie == null) {
+                    res.status(404); // Not Found
+                    return "Filme não encontrado!";
+                }
+                res.type("application/json");
+                return gson.toJson(movie);
+            });
+
+        } else {
+            System.out.println("Não foi possível conectar ao banco de dados.");
         }
-      } while (option != 5);
 
-      movieDAO.close();
-    } else {
-      System.out.println("Não foi possível conectar ao banco de dados.");
+        // Parar o servidor ao final (opcional)
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            movieDAO.close();
+            stop();
+        }));
     }
-  }
-
-  private static int showMenu() {
-    System.out.println("\n--- MENU ---");
-    System.out.println("1. Adicionar Filme");
-    System.out.println("2. Listar Filmes");
-    System.out.println("3. Atualizar Filme");
-    System.out.println("4. Deletar Filme");
-    System.out.println("5. Sair");
-    System.out.print("Escolha uma opção: ");
-    return scanner.nextInt();
-  }
-
-  private static void addMovie() {
-    System.out.print("Digite o título do filme: ");
-    scanner.nextLine(); // Consumir a nova linha
-    String title = scanner.nextLine();
-    System.out.print("Digite o ano de lançamento: ");
-    int releaseYear = scanner.nextInt();
-    System.out.print("Digite o gênero do filme: ");
-    scanner.nextLine(); // Consumir a nova linha
-    String genre = scanner.nextLine();
-    System.out.print("Digite o diretor do filme: ");
-    String director = scanner.nextLine();
-
-    Movie movie = new Movie(0, title, releaseYear, genre, director);
-    if (movieDAO.insertMovie(movie)) {
-      System.out.println("Filme adicionado com sucesso!");
-    } else {
-      System.out.println("Erro ao adicionar o filme.");
-    }
-  }
-
-  private static void listMovies() {
-    List<Movie> movies = movieDAO.getMovies();
-    System.out.println("\n--- Lista de Filmes ---");
-    for (Movie movie : movies) {
-      System.out.println("ID: " + movie.getId());
-      System.out.println("Título: " + movie.getTitle());
-      System.out.println("Ano de Lançamento: " + movie.getReleaseYear());
-      System.out.println("Gênero: " + movie.getGenre());
-      System.out.println("Diretor: " + movie.getDirector());
-      System.out.println("--------------------------");
-    }
-  }
-
-  private static void updateMovie() {
-    System.out.print("Digite o ID do filme a ser atualizado: ");
-    int id = scanner.nextInt();
-    Movie movie = movieDAO.getMovie(id);
-    if (movie == null) {
-      System.out.println("Filme não encontrado!");
-      return;
-    }
-
-    System.out.print("Digite o novo título do filme (ou pressione Enter para manter o atual): ");
-    scanner.nextLine(); // Consumir a nova linha
-    String title = scanner.nextLine();
-    if (!title.isEmpty()) {
-      movie.setTitle(title);
-    }
-
-    System.out.print("Digite o novo ano de lançamento (ou 0 para manter o atual): ");
-    int releaseYear = scanner.nextInt();
-    if (releaseYear != 0) {
-      movie.setReleaseYear(releaseYear);
-    }
-
-    System.out.print("Digite o novo gênero (ou pressione Enter para manter o atual): ");
-    scanner.nextLine(); // Consumir a nova linha
-    String genre = scanner.nextLine();
-    if (!genre.isEmpty()) {
-      movie.setGenre(genre);
-    }
-
-    System.out.print("Digite o novo diretor (ou pressione Enter para manter o atual): ");
-    String director = scanner.nextLine();
-    if (!director.isEmpty()) {
-      movie.setDirector(director);
-    }
-
-    if (movieDAO.updateMovie(movie)) {
-      System.out.println("Filme atualizado com sucesso!");
-    } else {
-      System.out.println("Erro ao atualizar o filme.");
-    }
-  }
-
-  private static void deleteMovie() {
-    System.out.print("Digite o ID do filme a ser deletado: ");
-    int id = scanner.nextInt();
-    if (movieDAO.deleteMovie(id)) {
-      System.out.println("Filme deletado com sucesso!");
-    } else {
-      System.out.println("Erro ao deletar o filme.");
-    }
-  }
 }
